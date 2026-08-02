@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pranava Savings Page</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; }
+  </style>
+</head>
+<body class="p-4 md:p-8 max-w-5xl mx-auto text-gray-800 flex flex-col min-h-screen justify-between">
+
+  <!-- ================= PROFILE / LOGIN SECTION ================= -->
+  <div id="loginSection" class="my-auto max-w-md w-full mx-auto bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 text-indigo-700 rounded-full font-black text-2xl mb-3">
+        P
+      </div>
+      <h1 class="text-2xl font-extrabold text-gray-800">Pranava Savings</h1>
+      <p class="text-xs text-gray-500 mt-1">Enter your profile details to access your savings tracker</p>
+    </div>
+
+    <!-- Login Form -->
+    <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Name</label>
+        <input type="text" id="loginName" required placeholder="Enter your name" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" />
+      </div>
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <label class="block text-xs font-semibold text-gray-600">Password</label>
+          <button type="button" onclick="showResetPassword()" class="text-xs text-indigo-600 hover:underline font-semibold">Forgot Password?</button>
+        </div>
+        <input type="password" id="loginPassword" required placeholder="Enter your password" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" />
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow transition text-sm">
+          Open Tracker
+        </button>
+        <button type="button" onclick="handleNewUser()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-xl shadow transition text-lg flex items-center justify-center" title="Create / Add Profile">
+          +
+        </button>
+      </div>
+    </form>
+
+    <!-- Reset Password Form (Hidden Initially) -->
+    <form id="resetForm" onsubmit="handleResetPassword(event)" class="space-y-4 hidden">
+      <div class="border-b pb-2 mb-3">
+        <h3 class="font-bold text-gray-800 text-sm">Reset Password</h3>
+        <p class="text-xs text-gray-400">Enter your profile name and new password</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Your Name</label>
+        <input type="text" id="resetName" required placeholder="Enter your existing profile name" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-600 mb-1">New Password</label>
+        <input type="password" id="resetNewPassword" required placeholder="Enter new password" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" />
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button type="submit" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl shadow transition text-sm">
+          Save New Password
+        </button>
+        <button type="button" onclick="showLogin()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-4 py-2.5 rounded-xl transition text-xs">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ================= MAIN DASHBOARD SECTION (Hidden Initially) ================= -->
+  <div id="dashboardSection" class="hidden">
+    <!-- Header -->
+    <header class="bg-indigo-700 text-white rounded-2xl p-6 shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold">Pranava Savings Page</h1>
+        <p class="text-indigo-200 text-sm mt-1">Welcome, <span id="userDisplayName" class="font-bold underline">User</span>!</p>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap justify-end">
+        <label for="monthSelect" class="font-medium text-sm">Select Month:</label>
+        <select id="monthSelect" onchange="changeMonth(this.value)" class="bg-indigo-800 text-white px-3 py-2 rounded-lg font-semibold outline-none border border-indigo-500 cursor-pointer text-sm">
+        </select>
+        <button onclick="addNewCustomMonth()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-2 rounded-lg shadow transition flex items-center gap-1 text-sm">
+          <span>+</span> Add Month
+        </button>
+        <button onclick="exportToCSV()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg shadow transition flex items-center gap-1 text-sm">
+          📥 Export CSV
+        </button>
+        <button onclick="logout()" class="bg-indigo-900 hover:bg-indigo-950 text-white font-semibold px-3 py-2 rounded-lg transition text-xs">
+          Logout
+        </button>
+      </div>
+    </header>
+
+    <!-- Financial Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-500">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Monthly Budget</p>
+        <div class="flex items-center justify-between mt-2">
+          <p class="text-2xl font-black text-gray-800">₹<span id="monthlyBudget">25,000</span></p>
+        </div>
+      </div>
+      
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-red-500">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Spent</p>
+        <p class="text-2xl font-black text-red-600 mt-2">₹<span id="totalSpent">0</span></p>
+      </div>
+
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-emerald-500">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Remaining Balance</p>
+        <p class="text-2xl font-black text-emerald-600 mt-2">₹<span id="remainingBalance">25,000</span></p>
+      </div>
+    </div>
+
+    <!-- Main Grid: Categories & Add/Edit Area -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+      
+      <!-- Category Selector List -->
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-1">
+        <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Categories</h2>
+        <p class="text-xs text-gray-500 mb-3">Click any category to add or edit items:</p>
+        <div id="categoryList" class="space-y-2">
+          <!-- Generated dynamically -->
+        </div>
+      </div>
+
+      <!-- Category Detail & Item History Entry Area -->
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col justify-between">
+        <div>
+          <div class="flex justify-between items-center border-b pb-3 mb-4">
+            <h2 id="activeCategoryTitle" class="text-xl font-bold text-indigo-700">Select a Category</h2>
+            <span id="categorySpentBadge" class="hidden bg-indigo-50 text-indigo-700 font-semibold px-3 py-1 rounded-full text-xs">
+              Spent: ₹<span id="activeCategorySpent">0</span>
+            </span>
+          </div>
+
+          <div id="entryForm" class="hidden space-y-6">
+            <!-- Add New Expense Form -->
+            <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+              <h3 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-3">+ Add New Item</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                <input type="text" id="expenseDesc" placeholder="Description (e.g. petrol, oil)" class="sm:col-span-3 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white" />
+                <input type="number" id="expenseAmount" placeholder="Amount (₹)" class="sm:col-span-2 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white" />
+              </div>
+              <button onclick="addExpense()" class="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg shadow transition text-sm">
+                Add Expense & Reduce Budget
+              </button>
+            </div>
+
+            <!-- Category History List -->
+            <div>
+              <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Category History & Timestamps</h3>
+              <div id="activeCategoryHistory" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <div id="noCategoryPlaceholder" class="py-12 text-center text-gray-400">
+            <p class="text-sm">Click on any category on the left to add, view history, or edit transactions.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Expense Breakdown Summary -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
+      <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <h2 class="text-lg font-bold text-gray-800">Overall Category Summary</h2>
+        <div class="flex gap-4 items-center">
+          <button onclick="exportToCSV()" class="text-xs bg-amber-100 text-amber-800 hover:bg-amber-200 font-semibold px-3 py-1.5 rounded-lg transition">
+            📥 Export to Excel (CSV)
+          </button>
+          <button onclick="clearMonthData()" class="text-xs text-red-500 hover:underline">Reset Current Month</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-50 border-b text-xs text-gray-500 uppercase tracking-wider">
+              <th class="p-3">Category</th>
+              <th class="p-3">Items Breakdown & Timestamp</th>
+              <th class="p-3">Total Spent (₹)</th>
+              <th class="p-3 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="transactionTable" class="divide-y text-sm text-gray-700">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="mt-auto py-6 text-center text-xs font-semibold text-gray-500 border-t border-gray-200">
+    Designed by pranav@2026
+  </footer>
+
+  <!-- ================= APPLICATION LOGIC ================= -->
+  <script>
+    const INITIAL_BUDGET = 25000;
+    const CATEGORIES = [
+      "Living", "Home", "Outing", "Petrol", "Saving",
+      "Extra Things", "Online Deliverys", "Snacks", "Skin hair", "Movies"
+    ];
+
+    const ALL_MONTHS = [
+      "January 2026", "February 2026", "March 2026", "April 2026",
+      "May 2026", "June 2026", "July 2026", "August 2026",
+      "September 2026", "October 2026", "November 2026", "December 2026"
+    ];
+
+    let currentUser = "";
+    let usersDb = JSON.parse(localStorage.getItem('pranava_users_db')) || {};
+    let store = {};
+    let activeMonth = "";
+    let activeCategory = "";
+
+    function showResetPassword() {
+      document.getElementById('loginForm').classList.add('hidden');
+      document.getElementById('resetForm').classList.remove('hidden');
+    }
+
+    function showLogin() {
+      document.getElementById('resetForm').classList.add('hidden');
+      document.getElementById('loginForm').classList.remove('hidden');
+    }
+
+    function handleResetPassword(e) {
+      e.preventDefault();
+      const name = document.getElementById('resetName').value.trim();
+      const newPass = document.getElementById('resetNewPassword').value.trim();
+
+      if (!name || !newPass) return;
+
+      if (!usersDb[name]) {
+        alert("Profile name not found! Please enter a valid profile name.");
+        return;
+      }
+
+      usersDb[name].password = newPass;
+      localStorage.setItem('pranava_users_db', JSON.stringify(usersDb));
+      alert(`Password updated successfully for ${name}! You can now log in.`);
+      showLogin();
+      document.getElementById('loginName').value = name;
+      document.getElementById('loginPassword').value = newPass;
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const name = document.getElementById('loginName').value.trim();
+      const pass = document.getElementById('loginPassword').value.trim();
+
+      if (!name || !pass) return;
+
+      if (!usersDb[name]) {
+        usersDb[name] = { password: pass, data: {} };
+      } else if (usersDb[name].password !== pass) {
+        alert("Incorrect password for this profile name.");
+        return;
+      }
+
+      currentUser = name;
+      store = usersDb[name].data || {};
+      saveUsersDb();
+      openDashboard();
+    }
+
+    function handleNewUser() {
+      const name = document.getElementById('loginName').value.trim();
+      const pass = document.getElementById('loginPassword').value.trim();
+
+      if (!name || !pass) {
+        alert("Please fill in both Name and Password first to create a profile.");
+        return;
+      }
+
+      if (usersDb[name]) {
+        alert("Profile already exists! Click 'Open Tracker' to log in.");
+        return;
+      }
+
+      usersDb[name] = { password: pass, data: {} };
+      currentUser = name;
+      store = usersDb[name].data;
+      saveUsersDb();
+      alert(`New profile created for ${name}! Opening page...`);
+      openDashboard();
+    }
+
+    function logout() {
+      currentUser = "";
+      document.getElementById('dashboardSection').classList.add('hidden');
+      document.getElementById('loginSection').classList.remove('hidden');
+      document.getElementById('loginName').value = "";
+      document.getElementById('loginPassword').value = "";
+      showLogin();
+    }
+
+    function openDashboard() {
+      document.getElementById('loginSection').classList.add('hidden');
+      document.getElementById('dashboardSection').classList.remove('hidden');
+      document.getElementById('userDisplayName').innerText = currentUser;
+      initApp();
+    }
+
+    function initApp() {
+      ALL_MONTHS.forEach(m => {
+        if (!store[m]) store[m] = [];
+      });
+
+      const currentMonthKey = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+      activeMonth = store[currentMonthKey] ? currentMonthKey : ALL_MONTHS[0];
+      saveAndRender();
+    }
+
+    function getSortedMonths() {
+      const monthOrder = {
+        "January": 1, "February": 2, "March": 3, "April": 4,
+        "May": 5, "June": 6, "July": 7, "August": 8,
+        "September": 9, "October": 10, "November": 11, "December": 12
+      };
+
+      return Object.keys(store).sort((a, b) => {
+        const [monthA, yearA] = a.split(" ");
+        const [monthB, yearB] = b.split(" ");
+        
+        if (yearA !== yearB) return (parseInt(yearA) || 0) - (parseInt(yearB) || 0);
+        return (monthOrder[monthA] || 99) - (monthOrder[monthB] || 99);
+      });
+    }
+
+    function saveUsersDb() {
+      if (currentUser) {
+        usersDb[currentUser].data = store;
+      }
+      localStorage.setItem('pranava_users_db', JSON.stringify(usersDb));
+    }
+
+    function saveAndRender() {
+      saveUsersDb();
+      renderMonthDropdown();
+      renderCategoryList();
+      renderTransactions();
+      calculateTotals();
+      if (activeCategory) renderCategoryHistory();
+    }
+
+    function renderMonthDropdown() {
+      const select = document.getElementById('monthSelect');
+      select.innerHTML = '';
+      const sortedMonths = getSortedMonths();
+
+      sortedMonths.forEach(month => {
+        const option = document.createElement('option');
+        option.value = month;
+        option.textContent = month;
+        if (month === activeMonth) option.selected = true;
+        select.appendChild(option);
+      });
+    }
+
+    function addNewCustomMonth() {
+      const name = prompt("Enter new custom month and year (e.g., January 2027):");
+      if (name && name.trim()) {
+        const formatted = name.trim();
+        if (!store[formatted]) store[formatted] = [];
+        activeMonth = formatted;
+        saveAndRender();
+      }
+    }
+
+    function changeMonth(month) {
+      activeMonth = month;
+      activeCategory = "";
+      document.getElementById('entryForm').classList.add('hidden');
+      document.getElementById('noCategoryPlaceholder').classList.remove('hidden');
+      document.getElementById('activeCategoryTitle').innerText = "Select a Category";
+      document.getElementById('categorySpentBadge').classList.add('hidden');
+      saveAndRender();
+    }
+
+    function renderCategoryList() {
+      const list = document.getElementById('categoryList');
+      list.innerHTML = '';
+      const currentExpenses = store[activeMonth] || [];
+
+      CATEGORIES.forEach(cat => {
+        const catSpent = currentExpenses
+          .filter(e => e.category === cat)
+          .reduce((sum, e) => sum + Number(e.amount), 0);
+
+        const isSelected = cat === activeCategory;
+        const btn = document.createElement('button');
+        btn.className = `w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition flex justify-between items-center ${
+          isSelected ? 'bg-indigo-600 text-white shadow' : 'bg-gray-50 hover:bg-indigo-50 text-gray-700'
+        }`;
+        btn.onclick = () => selectCategory(cat);
+        btn.innerHTML = `
+          <span>${cat}</span>
+          <span class="text-xs ${isSelected ? 'text-indigo-200' : 'text-gray-400'}">₹${catSpent}</span>
+        `;
+        list.appendChild(btn);
+      });
+    }
+
+    function selectCategory(cat) {
+      activeCategory = cat;
+      document.getElementById('activeCategoryTitle').innerText = cat;
+      document.getElementById('entryForm').classList.remove('hidden');
+      document.getElementById('noCategoryPlaceholder').classList.add('hidden');
+      document.getElementById('categorySpentBadge').classList.remove('hidden');
+
+      renderCategoryList();
+      updateCategorySpentBadge();
+      renderCategoryHistory();
+    }
+
+    function updateCategorySpentBadge() {
+      const currentExpenses = store[activeMonth] || [];
+      const catSpent = currentExpenses
+        .filter(e => e.category === activeCategory)
+        .reduce((sum, e) => sum + Number(e.amount), 0);
+      document.getElementById('activeCategorySpent').innerText = catSpent.toLocaleString();
+    }
+
+    function renderCategoryHistory() {
+      const historyContainer = document.getElementById('activeCategoryHistory');
+      historyContainer.innerHTML = '';
+      const currentExpenses = (store[activeMonth] || []).filter(e => e.category === activeCategory);
+
+      if (currentExpenses.length === 0) {
+        historyContainer.innerHTML = `<p class="text-xs text-gray-400 italic py-2">No history items added yet for ${activeCategory}.</p>`;
+        return;
+      }
+
+      currentExpenses.forEach(exp => {
+        const timeFormatted = exp.timestamp || "N/A";
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'flex flex-col sm:flex-row items-start sm:items-center justify-between bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-sm gap-2';
+        itemDiv.innerHTML = `
+          <div class="flex-1 w-full">
+            <input type="text" value="${exp.description}" onchange="editExpense(${exp.id}, 'description', this.value)" class="bg-transparent font-medium text-gray-700 border-b border-transparent hover:border-gray-300 focus:border-indigo-500 focus:bg-white outline-none px-1 w-full" />
+            <span class="text-[10px] text-gray-400 block px-1">${timeFormatted}</span>
+          </div>
+          
+          <div class="flex items-center gap-2 self-end sm:self-center">
+            <span class="text-gray-400 text-xs">₹</span>
+            <input type="number" value="${exp.amount}" onchange="editExpense(${exp.id}, 'amount', this.value)" class="bg-transparent font-bold text-gray-800 w-20 text-right border-b border-transparent hover:border-gray-300 focus:border-indigo-500 focus:bg-white outline-none px-1" />
+            <button onclick="deleteSingleExpense(${exp.id})" class="text-red-400 hover:text-red-600 font-bold px-1 ml-1" title="Delete Item">✕</button>
+          </div>
+        `;
+        historyContainer.appendChild(itemDiv);
+      });
+    }
+
+    function addExpense() {
+      const descInput = document.getElementById('expenseDesc');
+      const amountInput = document.getElementById('expenseAmount');
+      const desc = descInput.value.trim();
+      const amount = parseFloat(amountInput.value);
+
+      if (!desc || isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid description and amount.");
+        return;
+      }
+
+      const now = new Date();
+      const timeString = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const expense = {
+        id: Date.now(),
+        category: activeCategory,
+        description: desc,
+        amount: amount,
+        timestamp: timeString
+      };
+
+      store[activeMonth].push(expense);
+      descInput.value = '';
+      amountInput.value = '';
+
+      saveAndRender();
+      updateCategorySpentBadge();
+    }
+
+    function editExpense(id, field, value) {
+      const item = store[activeMonth].find(e => e.id === id);
+      if (item) {
+        if (field === 'amount') {
+          const numVal = parseFloat(value);
+          if (isNaN(numVal) || numVal < 0) {
+            alert("Please enter a valid amount.");
+            saveAndRender();
+            return;
+          }
+          item.amount = numVal;
+        } else if (field === 'description') {
+          if (!value.trim()) {
+            alert("Description cannot be empty.");
+            saveAndRender();
+            return;
+          }
+          item.description = value.trim();
+        }
+        saveAndRender();
+        updateCategorySpentBadge();
+      }
+    }
+
+    function deleteSingleExpense(id) {
+      store[activeMonth] = store[activeMonth].filter(e => e.id !== id);
+      saveAndRender();
+      if (activeCategory) updateCategorySpentBadge();
+    }
+
+    function deleteCategoryExpenses(categoryName) {
+      if (confirm(`Are you sure you want to delete all entries under ${categoryName}?`)) {
+        store[activeMonth] = store[activeMonth].filter(e => e.category !== categoryName);
+        saveAndRender();
+        if (activeCategory === categoryName) updateCategorySpentBadge();
+      }
+    }
+
+    function clearMonthData() {
+      if (confirm(`Are you sure you want to delete all entries for ${activeMonth}?`)) {
+        store[activeMonth] = [];
+        saveAndRender();
+      }
+    }
+
+    function calculateTotals() {
+      const currentExpenses = store[activeMonth] || [];
+      const totalSpent = currentExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+      const remaining = INITIAL_BUDGET - totalSpent;
+
+      document.getElementById('totalSpent').innerText = totalSpent.toLocaleString();
+      document.getElementById('remainingBalance').innerText = remaining.toLocaleString();
+    }
+
+    function renderTransactions() {
+      const tbody = document.getElementById('transactionTable');
+      tbody.innerHTML = '';
+      const currentExpenses = store[activeMonth] || [];
+
+      if (currentExpenses.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400">No expenses recorded for ${activeMonth}.</td></tr>`;
+        return;
+      }
+
+      const grouped = {};
+      currentExpenses.forEach(exp => {
+        if (!grouped[exp.category]) {
+          grouped[exp.category] = { category: exp.category, items: [], totalAmount: 0 };
+        }
+        grouped[exp.category].items.push(exp);
+        grouped[exp.category].totalAmount += Number(exp.amount);
+      });
+
+      Object.values(grouped).forEach(group => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50';
+
+        const itemsHtml = group.items.map(item => `
+          <div class="flex justify-between items-center py-1.5 border-b border-gray-100 last:border-0 gap-4">
+            <div>
+              <span class="font-medium text-gray-700 block">${item.description}</span>
+              <span class="text-[10px] text-gray-400 block">${item.timestamp || 'N/A'}</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="font-semibold text-gray-600">₹${item.amount.toLocaleString()}</span>
+              <button onclick="deleteSingleExpense(${item.id})" class="text-red-400 hover:text-red-600 text-xs font-bold">✕</button>
+            </div>
+          </div>
+        `).join('');
+
+        tr.innerHTML = `
+          <td class="p-3 font-semibold text-indigo-700 align-top">${group.category}</td>
+          <td class="p-3 align-top">${itemsHtml}</td>
+          <td class="p-3 font-black text-gray-800 text-base align-top">₹${group.totalAmount.toLocaleString()}</td>
+          <td class="p-3 text-right align-top">
+            <button onclick="deleteCategoryExpenses('${group.category}')" class="text-red-500 hover:text-red-700 font-semibold text-xs">Clear Category</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function exportToCSV() {
+      const currentExpenses = store[activeMonth] || [];
+
+      if (currentExpenses.length === 0) {
+        alert("No transactions available in " + activeMonth + " to export.");
+        return;
+      }
+
+      const totalSpent = currentExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+      const remaining = INITIAL_BUDGET - totalSpent;
+
+      let csvRows = [];
+      csvRows.push(['Pranava Savings Page - Monthly Report']);
+      csvRows.push(['User Profile', `"${currentUser}"`]);
+      csvRows.push(['Month', `"${activeMonth}"`]);
+      csvRows.push(['Initial Budget', `₹${INITIAL_BUDGET}`]);
+      csvRows.push(['Total Spent', `₹${totalSpent}`]);
+      csvRows.push(['Remaining Balance', `₹${remaining}`]);
+      csvRows.push([]);
+      csvRows.push(['Category', 'Item Description', 'Timestamp', 'Amount (INR)']);
+
+      currentExpenses.forEach(exp => {
+        const escapedDesc = `"${exp.description.replace(/"/g, '""')}"`;
+        const escapedCat = `"${exp.category.replace(/"/g, '""')}"`;
+        const escapedTime = `"${(exp.timestamp || 'N/A').replace(/"/g, '""')}"`;
+        csvRows.push([escapedCat, escapedDesc, escapedTime, exp.amount]);
+      });
+
+      const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csvRows.map(e => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      const safeFileName = activeMonth.toLowerCase().replace(/[^a-z0-9]/g, "_");
+      link.setAttribute("download", `pranava_savings_${currentUser}_${safeFileName}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
