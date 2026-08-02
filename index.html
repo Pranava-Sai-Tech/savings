@@ -221,6 +221,13 @@
     let activeMonth = "";
     let activeCategory = "";
 
+    function saveUsersDb() {
+      if (currentUser) {
+        usersDb[currentUser].data = store;
+      }
+      localStorage.setItem('pranava_users_db', JSON.stringify(usersDb));
+    }
+
     function showResetPassword() {
       document.getElementById('loginForm').classList.add('hidden');
       document.getElementById('resetForm').classList.remove('hidden');
@@ -244,7 +251,7 @@
       }
 
       usersDb[name].password = newPass;
-      localStorage.setItem('pranava_users_db', JSON.stringify(usersDb));
+      saveUsersDb();
       alert(`Password updated successfully for ${name}! You can now log in.`);
       showLogin();
       document.getElementById('loginName').value = name;
@@ -287,14 +294,18 @@
 
       usersDb[name] = { password: pass, data: {} };
       currentUser = name;
-      store = usersDb[name].data;
+      store = {};
       saveUsersDb();
       alert(`New profile created for ${name}! Opening page...`);
       openDashboard();
     }
 
     function logout() {
+      if (currentUser) {
+        saveUsersDb();
+      }
       currentUser = "";
+      store = {};
       document.getElementById('dashboardSection').classList.add('hidden');
       document.getElementById('loginSection').classList.remove('hidden');
       document.getElementById('loginName').value = "";
@@ -333,13 +344,6 @@
         if (yearA !== yearB) return (parseInt(yearA) || 0) - (parseInt(yearB) || 0);
         return (monthOrder[monthA] || 99) - (monthOrder[monthB] || 99);
       });
-    }
-
-    function saveUsersDb() {
-      if (currentUser) {
-        usersDb[currentUser].data = store;
-      }
-      localStorage.setItem('pranava_users_db', JSON.stringify(usersDb));
     }
 
     function saveAndRender() {
