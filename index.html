@@ -76,7 +76,8 @@
     <!-- Header -->
     <header class="bg-indigo-700 text-white rounded-2xl p-6 shadow-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
       <div>
-        <h1 class="text-3xl font-extrabold">Pranava Savings Page</h1>
+        <!-- DYNAMICALLY UPDATES USER NAME IN TITLE AND WELCOME LINE -->
+        <h1 class="text-3xl font-extrabold" id="mainHeaderTitle">Pranava Savings Page</h1>
         <p class="text-indigo-200 text-sm mt-1">Welcome, <span id="userDisplayName" class="font-bold underline">User</span>!</p>
       </div>
       <div class="flex items-center gap-3 flex-wrap justify-end">
@@ -319,7 +320,11 @@
     function openDashboard() {
       document.getElementById('loginSection').classList.add('hidden');
       document.getElementById('dashboardSection').classList.remove('hidden');
+      
+      // Dynamic Header Title & Welcome Line based on Logged-in Name
+      document.getElementById('mainHeaderTitle').innerText = `${currentUser} Savings Page`;
       document.getElementById('userDisplayName').innerText = currentUser;
+      
       initApp();
     }
 
@@ -328,7 +333,6 @@
         if (!store[m]) {
           store[m] = { budget: DEFAULT_BUDGET, expenses: [] };
         } else if (Array.isArray(store[m])) {
-          // Migration support for old data structures
           store[m] = { budget: DEFAULT_BUDGET, expenses: store[m] };
         }
       });
@@ -336,7 +340,6 @@
       const currentMonthKey = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
       activeMonth = store[currentMonthKey] ? currentMonthKey : ALL_MONTHS[0];
 
-      // Check if user needs to set initial budget
       if (!store[activeMonth].budget) {
         promptSetBudget(activeMonth);
       }
