@@ -97,10 +97,13 @@
 
     <!-- Financial Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-500">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Monthly Budget</p>
-        <div class="flex items-center justify-between mt-2">
-          <p class="text-2xl font-black text-gray-800">₹<span id="monthlyBudget">25,000</span></p>
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-500 flex flex-col justify-between">
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Monthly Budget</p>
+          <div class="flex items-center justify-between mt-2">
+            <p class="text-2xl font-black text-gray-800">₹<span id="monthlyBudget">25,000</span></p>
+            <button onclick="editBudgetPrompt()" class="text-xs text-indigo-600 hover:underline font-bold bg-indigo-50 px-2 py-1 rounded">Edit</button>
+          </div>
         </div>
       </div>
       
@@ -203,7 +206,7 @@
 
   <!-- ================= APPLICATION LOGIC ================= -->
   <script>
-    const INITIAL_BUDGET = 25000;
+    const DEFAULT_BUDGET = 25000;
     const CATEGORIES = [
       "Living", "Home", "Outing", "Petrol", "Saving",
       "Extra Things", "Online Deliverys", "Snacks", "Skin hair", "Movies"
@@ -322,12 +325,43 @@
 
     function initApp() {
       ALL_MONTHS.forEach(m => {
-        if (!store[m]) store[m] = [];
+        if (!store[m]) {
+          store[m] = { budget: DEFAULT_BUDGET, expenses: [] };
+        } else if (Array.isArray(store[m])) {
+          // Migration support for old data structures
+          store[m] = { budget: DEFAULT_BUDGET, expenses: store[m] };
+        }
       });
 
       const currentMonthKey = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
       activeMonth = store[currentMonthKey] ? currentMonthKey : ALL_MONTHS[0];
+
+      // Check if user needs to set initial budget
+      if (!store[activeMonth].budget) {
+        promptSetBudget(activeMonth);
+      }
+
       saveAndRender();
+    }
+
+    function promptSetBudget(monthKey) {
+      const userBudget = prompt(`Enter monthly budget for ${currentUser} (${monthKey}):`, DEFAULT_BUDGET);
+      const parsed = parseFloat(userBudget);
+      if (!isNaN(parsed) && parsed > 0) {
+        store[monthKey].budget = parsed;
+      } else {
+        store[monthKey].budget = DEFAULT_BUDGET;
+      }
+    }
+
+    function editBudgetPrompt() {
+      const currentB = store[activeMonth]?.budget || DEFAULT_BUDGET;
+      const newB = prompt(`Update monthly budget for ${activeMonth}:`, currentB);
+      const parsed = parseFloat(newB);
+      if (!isNaN(parsed) && parsed >= 0) {
+        store[activeMonth].budget = parsed;
+        saveAndRender();
+      }
     }
 
     function getSortedMonths() {
@@ -373,7 +407,14 @@
       const name = prompt("Enter new custom month and year (e.g., January 2027):");
       if (name && name.trim()) {
         const formatted = name.trim();
-        if (!store[formatted]) store[formatted] = [];
+        if (!store[formatted]) {
+          const customBudget = prompt(`Enter budget amount for ${formatted}:`, DEFAULT_BUDGET);
+          const parsedB = parseFloat(customBudget);
+          store[formatted] = {
+            budget: (!isNaN(parsedB) && parsedB > 0) ? parsedB : DEFAULT_BUDGET,
+            expenses: []
+          };
+        }
         activeMonth = formatted;
         saveAndRender();
       }
@@ -382,6 +423,11 @@
     function changeMonth(month) {
       activeMonth = month;
       activeCategory = "";
+      
+      if (!store[activeMonth] || !store[activeMonth].budget) {
+        promptSetBudget(activeMonth);
+      }
+
       document.getElementById('entryForm').classList.add('hidden');
       document.getElementById('noCategoryPlaceholder').classList.remove('hidden');
       document.getElementById('activeCategoryTitle').innerText = "Select a Category";
@@ -392,7 +438,7 @@
     function renderCategoryList() {
       const list = document.getElementById('categoryList');
       list.innerHTML = '';
-      const currentExpenses = store[activeMonth] || [];
+      const currentExpenses = store[activeMonth]?.expenses || [];
 
       CATEGORIES.forEach(cat => {
         const catSpent = currentExpenses
@@ -426,7 +472,7 @@
     }
 
     function updateCategorySpentBadge() {
-      const currentExpenses = store[activeMonth] || [];
+      const currentExpenses = store[activeMonth]?.expenses || [];
       const catSpent = currentExpenses
         .filter(e => e.category === activeCategory)
         .reduce((sum, e) => sum + Number(e.amount), 0);
@@ -436,7 +482,7 @@
     function renderCategoryHistory() {
       const historyContainer = document.getElementById('activeCategoryHistory');
       historyContainer.innerHTML = '';
-      const currentExpenses = (store[activeMonth] || []).filter(e => e.category === activeCategory);
+      const currentExpenses = (store[activeMonth]?.expenses || []).filter(e => e.category === activeCategory);
 
       if (currentExpenses.length === 0) {
         historyContainer.innerHTML = `<p class="text-xs text-gray-400 italic py-2">No history items added yet for ${activeCategory}.</p>`;
@@ -485,7 +531,7 @@
         timestamp: timeString
       };
 
-      store[activeMonth].push(expense);
+      store[activeMonth].expenses.push(expense);
       descInput.value = '';
       amountInput.value = '';
 
@@ -494,7 +540,7 @@
     }
 
     function editExpense(id, field, value) {
-      const item = store[activeMonth].find(e => e.id === id);
+      const item = (store[activeMonth]?.expenses || []).find(e => e.id === id);
       if (item) {
         if (field === 'amount') {
           const numVal = parseFloat(value);
@@ -518,31 +564,41 @@
     }
 
     function deleteSingleExpense(id) {
-      store[activeMonth] = store[activeMonth].filter(e => e.id !== id);
-      saveAndRender();
-      if (activeCategory) updateCategorySpentBadge();
+      if (store[activeMonth]) {
+        store[activeMonth].expenses = store[activeMonth].expenses.filter(e => e.id !== id);
+        saveAndRender();
+        if (activeCategory) updateCategorySpentBadge();
+      }
     }
 
     function deleteCategoryExpenses(categoryName) {
       if (confirm(`Are you sure you want to delete all entries under ${categoryName}?`)) {
-        store[activeMonth] = store[activeMonth].filter(e => e.category !== categoryName);
-        saveAndRender();
-        if (activeCategory === categoryName) updateCategorySpentBadge();
+        if (store[activeMonth]) {
+          store[activeMonth].expenses = store[activeMonth].expenses.filter(e => e.category !== categoryName);
+          saveAndRender();
+          if (activeCategory === categoryName) updateCategorySpentBadge();
+        }
       }
     }
 
     function clearMonthData() {
       if (confirm(`Are you sure you want to delete all entries for ${activeMonth}?`)) {
-        store[activeMonth] = [];
-        saveAndRender();
+        if (store[activeMonth]) {
+          store[activeMonth].expenses = [];
+          saveAndRender();
+        }
       }
     }
 
     function calculateTotals() {
-      const currentExpenses = store[activeMonth] || [];
-      const totalSpent = currentExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
-      const remaining = INITIAL_BUDGET - totalSpent;
+      const currentMonthData = store[activeMonth] || { budget: DEFAULT_BUDGET, expenses: [] };
+      const currentExpenses = currentMonthData.expenses || [];
+      const budget = currentMonthData.budget || DEFAULT_BUDGET;
 
+      const totalSpent = currentExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+      const remaining = budget - totalSpent;
+
+      document.getElementById('monthlyBudget').innerText = budget.toLocaleString();
       document.getElementById('totalSpent').innerText = totalSpent.toLocaleString();
       document.getElementById('remainingBalance').innerText = remaining.toLocaleString();
     }
@@ -550,7 +606,7 @@
     function renderTransactions() {
       const tbody = document.getElementById('transactionTable');
       tbody.innerHTML = '';
-      const currentExpenses = store[activeMonth] || [];
+      const currentExpenses = store[activeMonth]?.expenses || [];
 
       if (currentExpenses.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-gray-400">No expenses recorded for ${activeMonth}.</td></tr>`;
@@ -596,21 +652,23 @@
     }
 
     function exportToCSV() {
-      const currentExpenses = store[activeMonth] || [];
+      const currentMonthData = store[activeMonth] || { budget: DEFAULT_BUDGET, expenses: [] };
+      const currentExpenses = currentMonthData.expenses || [];
 
       if (currentExpenses.length === 0) {
         alert("No transactions available in " + activeMonth + " to export.");
         return;
       }
 
+      const budget = currentMonthData.budget || DEFAULT_BUDGET;
       const totalSpent = currentExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
-      const remaining = INITIAL_BUDGET - totalSpent;
+      const remaining = budget - totalSpent;
 
       let csvRows = [];
       csvRows.push(['Pranava Savings Page - Monthly Report']);
       csvRows.push(['User Profile', `"${currentUser}"`]);
       csvRows.push(['Month', `"${activeMonth}"`]);
-      csvRows.push(['Initial Budget', `₹${INITIAL_BUDGET}`]);
+      csvRows.push(['Monthly Budget', `₹${budget}`]);
       csvRows.push(['Total Spent', `₹${totalSpent}`]);
       csvRows.push(['Remaining Balance', `₹${remaining}`]);
       csvRows.push([]);
