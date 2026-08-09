@@ -195,9 +195,8 @@
   <!-- ================= FIREBASE SDK & APPLICATION LOGIC ================= -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, get, child, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // REPLACE THIS WITH YOUR FIREBASE CONFIG FROM FIREBASE CONSOLE
     const firebaseConfig = {
       apiKey: "AIzaSyCgRKRNegR-vTqTb-XOYGjrRsCi7YfCAsg",
       authDomain: "pranava-savings.firebaseapp.com",
@@ -290,7 +289,6 @@
       document.getElementById('mainHeaderTitle').innerText = `${currentUser} Savings Page`;
       document.getElementById('userDisplayName').innerText = currentUser;
 
-      // Live Real-Time Listener across Laptop & Mobile
       onValue(ref(db, 'users/' + cleanKey(currentUser) + '/data'), (snapshot) => {
         store = snapshot.val() || {};
         initApp();
@@ -303,8 +301,11 @@
         if (!store[m].expenses) store[m].expenses = [];
       });
 
-      const currentMonthKey = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-      activeMonth = store[currentMonthKey] ? currentMonthKey : ALL_MONTHS[0];
+      if (!activeMonth) {
+        const currentMonthKey = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+        activeMonth = store[currentMonthKey] ? currentMonthKey : ALL_MONTHS[0];
+      }
+
       saveAndRender();
     }
 
@@ -328,6 +329,33 @@
         select.appendChild(option);
       });
     }
+
+    window.editBudgetPrompt = function() {
+      const currentB = store[activeMonth]?.budget || DEFAULT_BUDGET;
+      const newB = prompt(`Update monthly budget for ${activeMonth}:`, currentB);
+      const parsed = parseFloat(newB);
+      if (!isNaN(parsed) && parsed >= 0) {
+        store[activeMonth].budget = parsed;
+        saveAndRender();
+      }
+    };
+
+    window.addNewCustomMonth = function() {
+      const name = prompt("Enter new custom month and year (e.g., January 2027):");
+      if (name && name.trim()) {
+        const formatted = name.trim();
+        if (!store[formatted]) {
+          const customBudget = prompt(`Enter budget amount for ${formatted}:`, DEFAULT_BUDGET);
+          const parsedB = parseFloat(customBudget);
+          store[formatted] = {
+            budget: (!isNaN(parsedB) && parsedB > 0) ? parsedB : DEFAULT_BUDGET,
+            expenses: []
+          };
+        }
+        activeMonth = formatted;
+        saveAndRender();
+      }
+    };
 
     window.changeMonth = function(month) {
       activeMonth = month;
@@ -404,6 +432,7 @@
         timestamp: now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
+      if (!store[activeMonth].expenses) store[activeMonth].expenses = [];
       store[activeMonth].expenses.push(expense);
       document.getElementById('expenseDesc').value = '';
       document.getElementById('expenseAmount').value = '';
@@ -418,9 +447,9 @@
     function calculateTotals() {
       const currentData = store[activeMonth] || { budget: DEFAULT_BUDGET, expenses: [] };
       const totalSpent = (currentData.expenses || []).reduce((sum, e) => sum + Number(e.amount), 0);
-      document.getElementById('monthlyBudget').innerText = currentData.budget.toLocaleString();
+      document.getElementById('monthlyBudget').innerText = (currentData.budget || DEFAULT_BUDGET).toLocaleString();
       document.getElementById('totalSpent').innerText = totalSpent.toLocaleString();
-      document.getElementById('remainingBalance').innerText = (currentData.budget - totalSpent).toLocaleString();
+      document.getElementById('remainingBalance').innerText = ((currentData.budget || DEFAULT_BUDGET) - totalSpent).toLocaleString();
     }
 
     function renderTransactions() {
@@ -456,6 +485,47 @@
         tbody.appendChild(tr);
       });
     }
+
+    window.exportToCSV = function() {
+      const currentMonthData = store[activeMonth] || { budget: DEFAULT_BUDGET, expenses: [] };
+      const currentExpenses = currentMonthData.expenses || [];
+
+      if (currentExpenses.length === 0) {
+        alert("No transactions available in " + activeMonth + " to export.");
+        return;
+      }
+
+      const budget = currentMonthData.budget || DEFAULT_BUDGET;
+      const totalSpent = currentExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+      const remaining = budget - totalSpent;
+
+      let csvRows = [];
+      csvRows.push(['Pranava Savings Page - Monthly Report']);
+      csvRows.push(['User Profile', `"${currentUser}"`]);
+      csvRows.push(['Month', `"${activeMonth}"`]);
+      csvRows.push(['Monthly Budget', `₹${budget}`]);
+      csvRows.push(['Total Spent', `₹${totalSpent}`]);
+      csvRows.push(['Remaining Balance', `₹${remaining}`]);
+      csvRows.push([]);
+      csvRows.push(['Category', 'Item Description', 'Timestamp', 'Amount (INR)']);
+
+      currentExpenses.forEach(exp => {
+        const escapedDesc = `"${exp.description.replace(/"/g, '""')}"`;
+        const escapedCat = `"${exp.category.replace(/"/g, '""')}"`;
+        const escapedTime = `"${(exp.timestamp || 'N/A').replace(/"/g, '""')}"`;
+        csvRows.push([escapedCat, escapedDesc, escapedTime, exp.amount]);
+      });
+
+      const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csvRows.map(e => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      const safeFileName = activeMonth.toLowerCase().replace(/[^a-z0-9]/g, "_");
+      link.setAttribute("download", `pranava_savings_${currentUser}_${safeFileName}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
 
     window.deleteCategoryExpenses = function(cat) {
       store[activeMonth].expenses = store[activeMonth].expenses.filter(e => e.category !== cat);
