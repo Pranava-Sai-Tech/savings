@@ -6,13 +6,173 @@
   <title>Pranava Savings Page</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { background-color: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; }
+    :root {
+      color-scheme: light;
+      --bg: #f3f4f6;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --input: #f8fafc;
+      --shadow: 0 10px 30px rgba(15, 23, 42, .08);
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --bg: #0b1120;
+      --surface: #111827;
+      --surface-2: #1f2937;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --border: #374151;
+      --input: #1f2937;
+      --shadow: 0 14px 35px rgba(0, 0, 0, .35);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      transition: background-color .25s ease, color .25s ease;
+      overflow-x: hidden;
+    }
+
+    .theme-surface { background: var(--surface) !important; border-color: var(--border) !important; }
+    .theme-input { background: var(--input) !important; color: var(--text) !important; border-color: var(--border) !important; }
+    .theme-text { color: var(--text) !important; }
+    .theme-muted { color: var(--muted) !important; }
+
+    /* Tailwind utility overrides for true class-based dark mode. */
+    html.dark .bg-white { background-color: var(--surface) !important; }
+    html.dark .bg-gray-50 { background-color: var(--surface-2) !important; }
+    html.dark .bg-gray-100 { background-color: #273244 !important; }
+    html.dark .bg-gray-200 { background-color: #374151 !important; }
+    html.dark .bg-indigo-50,
+    html.dark .bg-indigo-50\/50 { background-color: #1e293b !important; }
+    html.dark .text-gray-800,
+    html.dark .text-gray-700,
+    html.dark .text-gray-600 { color: var(--text) !important; }
+    html.dark .text-gray-500,
+    html.dark .text-gray-400 { color: var(--muted) !important; }
+    html.dark .border-gray-100,
+    html.dark .border-gray-200 { border-color: var(--border) !important; }
+    html.dark .border-indigo-100 { border-color: #334155 !important; }
+    html.dark .divide-y > :not([hidden]) ~ :not([hidden]) { border-color: var(--border) !important; }
+    html.dark input::placeholder { color: #94a3b8 !important; }
+    html.dark select { color: #f3f4f6 !important; }
+
+    /* Login / dashboard entrance */
+    .page-enter { animation: pageEnter .55s cubic-bezier(.22,1,.36,1) both; }
+    .login-card { animation: loginIn .65s cubic-bezier(.22,1,.36,1) both; }
+    .dashboard-enter { animation: dashboardIn .5s ease-out both; }
+
+    @keyframes pageEnter {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes loginIn {
+      0% { opacity: 0; transform: translateY(22px) scale(.97); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes dashboardIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes expenseIn {
+      from { opacity: 0; transform: translateY(12px) scale(.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes pop {
+      0% { transform: scale(.92); opacity: .5; }
+      70% { transform: scale(1.04); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .expense-new { animation: expenseIn .4s cubic-bezier(.22,1,.36,1) both; }
+    .value-pop { animation: pop .35s ease-out both; }
+    .success-pulse { animation: pop .35s ease-out both; }
+
+    .theme-transition,
+    .theme-transition * {
+      transition: background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease !important;
+    }
+
+    .theme-toggle {
+      width: 42px; height: 42px; border-radius: 9999px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(255,255,255,.25);
+      background: rgba(255,255,255,.12);
+      color: white; cursor: pointer;
+      transition: transform .2s ease, background .2s ease;
+      flex: 0 0 auto;
+    }
+    .theme-toggle:hover { transform: rotate(12deg) scale(1.04); background: rgba(255,255,255,.2); }
+
+    button, input, select { -webkit-tap-highlight-color: transparent; }
+    button { touch-action: manipulation; }
+    button:active { transform: scale(.98); }
+
+    .loading-btn { pointer-events: none; opacity: .8; }
+    .loading-btn::after {
+      content: "";
+      width: 15px; height: 15px;
+      margin-left: 8px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      display: inline-block;
+      vertical-align: -2px;
+      animation: spin .7s linear infinite;
+    }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      body { padding: 12px !important; }
+      #loginSection { padding: 22px !important; border-radius: 22px !important; }
+      #dashboardSection header { padding: 16px !important; border-radius: 18px !important; align-items: stretch !important; }
+      #dashboardSection header h1 { font-size: 1.45rem !important; line-height: 1.2; }
+      #dashboardSection header > div:last-child {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px !important;
+      }
+      #dashboardSection header > div:last-child > * { width: 100%; min-width: 0; }
+      #monthSelect { min-height: 42px; }
+      #dashboardSection .grid { gap: 14px !important; }
+      #dashboardSection .p-6 { padding: 16px !important; }
+      #dashboardSection .p-5 { padding: 15px !important; }
+      #dashboardSection table { min-width: 620px; }
+      #dashboardSection .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+      #entryForm input { min-height: 44px; }
+      #entryForm button { min-height: 44px; }
+      #categoryList button { min-height: 44px; }
+      .theme-toggle { width: 40px; height: 40px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
   </style>
 </head>
 <body class="p-4 md:p-8 max-w-5xl mx-auto text-gray-800 flex flex-col min-h-screen justify-between">
 
   <!-- ================= PROFILE / LOGIN SECTION ================= -->
-  <div id="loginSection" class="my-auto max-w-md w-full mx-auto bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
+  <div id="loginSection" class="my-auto max-w-md w-full mx-auto bg-white p-8 rounded-3xl shadow-xl border border-gray-100 theme-surface login-card page-enter">
+    <div class="flex justify-end -mb-2">
+      <button type="button" class="theme-toggle !text-gray-700 dark:!text-gray-100 !bg-gray-100 dark:!bg-gray-800 !border-gray-200 dark:!border-gray-700"
+              onclick="toggleTheme()" aria-label="Toggle light and dark theme" title="Toggle theme">
+        <span id="themeIcon">🌙</span>
+      </button>
+    </div>
     <div class="text-center mb-6">
       <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 text-indigo-700 rounded-full font-black text-2xl mb-3">
         P
@@ -25,21 +185,21 @@
     <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
       <div>
         <label class="block text-xs font-semibold text-gray-600 mb-1">Email</label>
-        <input type="email" id="loginEmail" required placeholder="Enter your email" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" />
+        <input type="email" id="loginEmail" required placeholder="Enter your email" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50 theme-input" />
       </div>
       <div>
         <div class="flex justify-between items-center mb-1">
           <label class="block text-xs font-semibold text-gray-600">Password</label>
           <button type="button" onclick="showResetPassword()" class="text-xs text-indigo-600 hover:underline font-semibold">Forgot Password?</button>
         </div>
-        <input type="password" id="loginPassword" required placeholder="Enter your password" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" />
+        <input type="password" id="loginPassword" required placeholder="Enter your password" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50 theme-input" />
       </div>
 
       <div class="flex gap-2 pt-2">
-        <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow transition text-sm">
+        <button id="loginButton" type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow transition text-sm">
           Open Tracker
         </button>
-        <button type="button" onclick="handleNewUser()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-xl shadow transition text-lg flex items-center justify-center" title="Create / Add Profile">
+        <button id="newUserButton" type="button" onclick="handleNewUser()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-xl shadow transition text-lg flex items-center justify-center" title="Create / Add Profile">
           +
         </button>
       </div>
@@ -53,10 +213,10 @@
       </div>
       <div>
         <label class="block text-xs font-semibold text-gray-600 mb-1">Email</label>
-        <input type="email" id="resetEmail" required placeholder="Enter your account email" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" />
+        <input type="email" id="resetEmail" required placeholder="Enter your account email" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50 theme-input" />
       </div>
       <div class="flex gap-2 pt-2">
-        <button type="submit" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl shadow transition text-sm">
+        <button id="resetButton" type="submit" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl shadow transition text-sm">
           Send Reset Email
         </button>
         <button type="button" onclick="showLogin()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-4 py-2.5 rounded-xl transition text-xs">
@@ -87,12 +247,15 @@
         <button onclick="logout()" class="bg-indigo-900 hover:bg-indigo-950 text-white font-semibold px-3 py-2 rounded-lg transition text-xs">
           Logout
         </button>
+        <button type="button" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light and dark theme" title="Toggle theme">
+          <span id="dashboardThemeIcon">🌙</span>
+        </button>
       </div>
     </header>
 
     <!-- Financial Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-500 flex flex-col justify-between">
+      <div class="bg-white theme-surface p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-500 flex flex-col justify-between">
         <div>
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Monthly Budget</p>
           <div class="flex items-center justify-between mt-2">
@@ -102,12 +265,12 @@
         </div>
       </div>
       
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-red-500">
+      <div class="bg-white theme-surface p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-red-500">
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Spent</p>
         <p class="text-2xl font-black text-red-600 mt-2">₹<span id="totalSpent">0</span></p>
       </div>
 
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-emerald-500">
+      <div class="bg-white theme-surface p-5 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-emerald-500">
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Remaining Balance</p>
         <p class="text-2xl font-black text-emerald-600 mt-2">₹<span id="remainingBalance">25,000</span></p>
       </div>
@@ -115,13 +278,13 @@
 
     <!-- Main Grid: Categories & Add/Edit Area -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-1">
+      <div class="bg-white theme-surface p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-1">
         <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Categories</h2>
         <p class="text-xs text-gray-500 mb-3">Click any category to add or edit items:</p>
         <div id="categoryList" class="space-y-2"></div>
       </div>
 
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col justify-between">
+      <div class="bg-white theme-surface p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col justify-between">
         <div>
           <div class="flex justify-between items-center border-b pb-3 mb-4">
             <h2 id="activeCategoryTitle" class="text-xl font-bold text-indigo-700">Select a Category</h2>
@@ -134,8 +297,8 @@
             <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
               <h3 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-3">+ Add New Item</h3>
               <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
-                <input type="text" id="expenseDesc" placeholder="Description (e.g. petrol, oil)" class="sm:col-span-3 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white" />
-                <input type="number" id="expenseAmount" placeholder="Amount (₹)" class="sm:col-span-2 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white" />
+                <input type="text" id="expenseDesc" placeholder="Description (e.g. petrol, oil)" class="sm:col-span-3 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white theme-surface" />
+                <input type="number" id="expenseAmount" placeholder="Amount (₹)" class="sm:col-span-2 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white theme-surface" />
               </div>
               <button onclick="addExpense()" class="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg shadow transition text-sm">
                 Add Expense & Reduce Budget
@@ -156,7 +319,7 @@
     </div>
 
     <!-- Monthly Expense Breakdown Summary -->
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
+    <div class="bg-white theme-surface p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
       <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
         <h2 class="text-lg font-bold text-gray-800">Overall Category Summary</h2>
         <div class="flex gap-4 items-center">
@@ -182,6 +345,8 @@
       </div>
     </div>
   </div>
+
+  <div id="toast" class="fixed left-1/2 bottom-5 z-50 hidden -translate-x-1/2 px-4 py-3 rounded-xl shadow-2xl text-sm font-semibold bg-gray-900 text-white max-w-[90vw] text-center"></div>
 
   <footer class="mt-auto py-6 text-center text-xs font-semibold text-gray-500 border-t border-gray-200">
     Designed by pranav@2026
@@ -260,7 +425,9 @@
       if (!email || !pass) return;
 
       try {
+        animateButton('loginButton', true);
         await signInWithEmailAndPassword(auth, email, pass);
+        showToast('Welcome back!');
       } catch (error) {
         console.error(error);
         const messages = {
@@ -270,7 +437,9 @@
           'auth/invalid-email': 'Please enter a valid email address.',
           'auth/too-many-requests': 'Too many attempts. Please try again later.'
         };
-        alert(messages[error.code] || error.message);
+        showToast(messages[error.code] || error.message, 'error');
+      } finally {
+        animateButton('loginButton', false);
       }
     };
 
@@ -281,11 +450,12 @@
       if (pass.length < 6) { alert("Password must be at least 6 characters."); return; }
 
       try {
+        animateButton('newUserButton', true);
         const credential = await createUserWithEmailAndPassword(auth, email, pass);
         const displayName = email.split('@')[0];
         await updateProfile(credential.user, { displayName });
         await set(ref(db, 'users/' + credential.user.uid + '/data'), {});
-        alert("Account created successfully.");
+        showToast("Account created successfully!");
       } catch (error) {
         console.error(error);
         const messages = {
@@ -293,7 +463,9 @@
           'auth/invalid-email': 'Please enter a valid email address.',
           'auth/weak-password': 'Password must be at least 6 characters.'
         };
-        alert(messages[error.code] || error.message);
+        showToast(messages[error.code] || error.message, 'error');
+      } finally {
+        animateButton('newUserButton', false);
       }
     };
 
@@ -303,8 +475,9 @@
       if (!email) return;
 
       try {
+        animateButton('resetButton', true);
         await sendPasswordResetEmail(auth, email);
-        alert("Password reset email sent. Check your inbox.");
+        showToast("Password reset email sent. Check your inbox.");
         showLogin();
       } catch (error) {
         console.error(error);
@@ -312,7 +485,9 @@
           'auth/user-not-found': 'No account found with this email.',
           'auth/invalid-email': 'Please enter a valid email address.'
         };
-        alert(messages[error.code] || error.message);
+        showToast(messages[error.code] || error.message, 'error');
+      } finally {
+        animateButton('resetButton', false);
       }
     };
 
@@ -320,6 +495,7 @@
       if (!currentUser) return;
       document.getElementById('loginSection').classList.add('hidden');
       document.getElementById('dashboardSection').classList.remove('hidden');
+      document.getElementById('dashboardSection').classList.add('dashboard-enter');
       const displayName = getDisplayName(currentUser);
       document.getElementById('mainHeaderTitle').innerText = `${displayName} Savings Page`;
       document.getElementById('userDisplayName').innerText = displayName;
@@ -452,7 +628,7 @@
 
       currentExpenses.forEach(exp => {
         const itemDiv = document.createElement('div');
-        itemDiv.className = 'flex items-center justify-between bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-sm gap-2';
+        itemDiv.className = 'expense-new flex items-center justify-between bg-gray-50 p-2.5 rounded-lg border border-gray-100 text-sm gap-2 theme-input';
         itemDiv.innerHTML = `
           <div class="flex-1">
             <span class="font-medium text-gray-700 block">${exp.description}</span>
@@ -485,6 +661,25 @@
       document.getElementById('expenseDesc').value = '';
       document.getElementById('expenseAmount').value = '';
       saveAndRender();
+
+      // Animate the newly added transaction and summary values.
+      setTimeout(() => {
+        const history = document.getElementById('activeCategoryHistory');
+        const last = history?.lastElementChild;
+        if (last) {
+          last.classList.add('expense-new');
+          setTimeout(() => last.classList.remove('expense-new'), 450);
+        }
+        ['monthlyBudget', 'totalSpent', 'remainingBalance'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.classList.remove('value-pop');
+            void el.offsetWidth;
+            el.classList.add('value-pop');
+          }
+        });
+      }, 30);
+      showToast(`Added ₹${amount.toLocaleString()} expense`);
     };
 
     window.deleteSingleExpense = function(id) {
@@ -585,9 +780,70 @@
       saveAndRender();
     };
 
-    window.showResetPassword = () => { document.getElementById('loginForm').classList.add('hidden'); document.getElementById('resetForm').classList.remove('hidden'); };
-    window.showLogin = () => { document.getElementById('resetForm').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); };
-    window.logout = async () => { try { await signOut(auth); } catch (error) { console.error(error); } };
+    // ================= THEME =================
+    function applyTheme(theme) {
+      const root = document.documentElement;
+      root.classList.toggle('dark', theme === 'dark');
+      localStorage.setItem('pranava-theme', theme);
+
+      const icon = theme === 'dark' ? '☀️' : '🌙';
+      const a = document.getElementById('themeIcon');
+      const b = document.getElementById('dashboardThemeIcon');
+      if (a) a.textContent = icon;
+      if (b) b.textContent = icon;
+    }
+
+    window.toggleTheme = function() {
+      const next = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+      document.documentElement.classList.add('theme-transition');
+      applyTheme(next);
+      setTimeout(() => document.documentElement.classList.remove('theme-transition'), 350);
+    };
+
+    // Restore saved theme, otherwise follow the device preference.
+    const savedTheme = localStorage.getItem('pranava-theme');
+    const initialTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    applyTheme(initialTheme);
+
+    // ================= UI HELPERS =================
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.textContent = message;
+      toast.className = 'fixed left-1/2 bottom-5 z-50 -translate-x-1/2 px-4 py-3 rounded-xl shadow-2xl text-sm font-semibold max-w-[90vw] text-center';
+      toast.classList.add(type === 'error' ? 'bg-red-600' : 'bg-gray-900', 'text-white');
+      toast.classList.remove('hidden');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => toast.classList.add('hidden'), 2200);
+    }
+
+    function animateButton(id, loading) {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.classList.toggle('loading-btn', loading);
+      btn.disabled = loading;
+    }
+
+    window.showResetPassword = () => {
+      document.getElementById('loginForm').classList.add('hidden');
+      document.getElementById('resetForm').classList.remove('hidden');
+      document.getElementById('loginSection').classList.add('login-card');
+    };
+
+    window.showLogin = () => {
+      document.getElementById('resetForm').classList.add('hidden');
+      document.getElementById('loginForm').classList.remove('hidden');
+    };
+
+    window.logout = async () => {
+      try {
+        await signOut(auth);
+        showToast('Signed out successfully');
+      } catch (error) {
+        console.error(error);
+        showToast('Could not sign out', 'error');
+      }
+    };
   </script>
 </body>
 </html>
