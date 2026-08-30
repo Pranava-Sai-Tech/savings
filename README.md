@@ -1,3 +1,3 @@
 Savings tracker page
 
- https://pranava-sai-tech.github.io/savings/
+ https://pranavasaikalagatla.github.io/savings/
