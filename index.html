@@ -18,14 +18,14 @@
         P
       </div>
       <h1 class="text-2xl font-extrabold text-gray-800">Savings page</h1>
-      <p class="text-xs text-gray-500 mt-1">Enter your profile details to access your cloud savings tracker</p>
+      <p class="text-xs text-gray-500 mt-1">Sign in to access your secure cloud savings tracker</p>
     </div>
 
     <!-- Login Form -->
     <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
       <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1">Name</label>
-        <input type="text" id="loginName" required placeholder="Enter your name" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" />
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Email</label>
+        <input type="email" id="loginEmail" required placeholder="Enter your email" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" />
       </div>
       <div>
         <div class="flex justify-between items-center mb-1">
@@ -49,20 +49,15 @@
     <form id="resetForm" onsubmit="handleResetPassword(event)" class="space-y-4 hidden">
       <div class="border-b pb-2 mb-3">
         <h3 class="font-bold text-gray-800 text-sm">Reset Password</h3>
-        <p class="text-xs text-gray-400">Enter your profile name and new password</p>
+        <p class="text-xs text-gray-400">Enter your account email to receive a password reset link</p>
       </div>
       <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1">Your Name</label>
-        <input type="text" id="resetName" required placeholder="Enter your existing profile name" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" />
+        <label class="block text-xs font-semibold text-gray-600 mb-1">Email</label>
+        <input type="email" id="resetEmail" required placeholder="Enter your account email" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" />
       </div>
-      <div>
-        <label class="block text-xs font-semibold text-gray-600 mb-1">New Password</label>
-        <input type="password" id="resetNewPassword" required placeholder="Enter new password" class="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-gray-50" />
-      </div>
-
       <div class="flex gap-2 pt-2">
         <button type="submit" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl shadow transition text-sm">
-          Save New Password
+          Send Reset Email
         </button>
         <button type="button" onclick="showLogin()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-4 py-2.5 rounded-xl transition text-xs">
           Cancel
@@ -196,104 +191,157 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
+    // ================= FIREBASE CONFIG =================
+    // Replace DATABASE_URL with the exact URL shown in:
+    // Firebase Console → Realtime Database → Data
     const firebaseConfig = {
-      apiKey: "AIzaSyCgRKRNegR-vTqTb-XOYGjrRsCi7YfCAsg",
-      authDomain: "pranava-savings.firebaseapp.com",
-      databaseURL: "https://pranava-savings-default-rtdb.firebaseio.com",
-      projectId: "pranava-savings",
-      storageBucket: "pranava-savings.firebasestorage.app",
-      messagingSenderId: "914390229356",
-      appId: "1:914390229356:web:30fb47f95111ee38aed349",
-      measurementId: "G-B52G3GX9ZP"
+      apiKey: "AIzaSyChpUI8XbG9oEtRseqDpxLy6yF47wJkz0E",
+      authDomain: "save-13686.firebaseapp.com",
+      databaseURL: "https://save-13686-default-rtdb.firebaseio.com/",
+      projectId: "save-13686",
+      storageBucket: "save-13686.firebasestorage.app",
+      messagingSenderId: "321698828209",
+      appId: "1:321698828209:web:d48d56acfd3615b794f790",
+      measurementId: "G-J5VVGV3G96"
     };
+
+    if (firebaseConfig.databaseURL === "PASTE_YOUR_REALTIME_DATABASE_URL_HERE") {
+      document.body.innerHTML = `
+        <div style="max-width:700px;margin:60px auto;padding:24px;font-family:system-ui;
+                    border:1px solid #ddd;border-radius:16px;background:#fff">
+          <h2 style="margin-top:0">Firebase setup required</h2>
+          <p>Open Firebase Console → Realtime Database → Data and copy your database URL.</p>
+          <p>Then replace <b>PASTE_YOUR_REALTIME_DATABASE_URL_HERE</b> in this HTML file.</p>
+        </div>`;
+      throw new Error("Realtime Database URL has not been configured.");
+    }
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const auth = getAuth(app);
 
     const DEFAULT_BUDGET = 25000;
     const CATEGORIES = ["Living", "Home", "Outing", "Petrol", "Saving", "Extra Things", "Online Deliverys", "Snacks", "Skin hair", "Movies"];
     const ALL_MONTHS = ["January 2026", "February 2026", "March 2026", "April 2026", "May 2026", "June 2026", "July 2026", "August 2026", "September 2026", "October 2026", "November 2026", "December 2026"];
 
-    let currentUser = "";
+    let currentUser = null;
     let store = {};
     let activeMonth = "";
     let activeCategory = "";
 
     function cleanKey(str) { return str.replace(/[.#$\[\]]/g, "_"); }
 
-    window.saveUsersDb = function() {
+    function userDataRef() {
+      if (!currentUser) throw new Error("Not signed in");
+      return ref(db, 'users/' + currentUser.uid + '/data');
+    }
+
+    window.saveUsersDb = async function() {
       if (currentUser) {
-        set(ref(db, 'users/' + cleanKey(currentUser) + '/data'), store);
+        try {
+          await set(userDataRef(), store);
+        } catch (error) {
+          console.error(error);
+          alert("Could not save your savings data. Please check your connection.");
+        }
       }
     };
+
+    function getDisplayName(user) {
+      return user?.displayName || user?.email?.split('@')[0] || 'User';
+    }
 
     window.handleLogin = async function(e) {
       e.preventDefault();
-      const name = document.getElementById('loginName').value.trim();
-      const pass = document.getElementById('loginPassword').value.trim();
-      if (!name || !pass) return;
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass = document.getElementById('loginPassword').value;
+      if (!email || !pass) return;
 
-      const userRef = ref(db, 'users/' + cleanKey(name));
-      const snapshot = await get(userRef);
-
-      if (!snapshot.exists()) {
-        await set(userRef, { password: pass, data: {} });
-      } else if (snapshot.val().password !== pass) {
-        alert("Incorrect password for this profile.");
-        return;
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch (error) {
+        console.error(error);
+        const messages = {
+          'auth/invalid-credential': 'Incorrect email or password.',
+          'auth/user-not-found': 'No account found with this email.',
+          'auth/wrong-password': 'Incorrect email or password.',
+          'auth/invalid-email': 'Please enter a valid email address.',
+          'auth/too-many-requests': 'Too many attempts. Please try again later.'
+        };
+        alert(messages[error.code] || error.message);
       }
-
-      currentUser = name;
-      store = snapshot.val().data || {};
-      openDashboard();
     };
 
     window.handleNewUser = async function() {
-      const name = document.getElementById('loginName').value.trim();
-      const pass = document.getElementById('loginPassword').value.trim();
-      if (!name || !pass) { alert("Enter both Name and Password."); return; }
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass = document.getElementById('loginPassword').value;
+      if (!email || !pass) { alert("Enter your email and password first."); return; }
+      if (pass.length < 6) { alert("Password must be at least 6 characters."); return; }
 
-      const userRef = ref(db, 'users/' + cleanKey(name));
-      const snapshot = await get(userRef);
-
-      if (snapshot.exists()) {
-        alert("Profile exists! Click Open Tracker.");
-        return;
+      try {
+        const credential = await createUserWithEmailAndPassword(auth, email, pass);
+        const displayName = email.split('@')[0];
+        await updateProfile(credential.user, { displayName });
+        await set(ref(db, 'users/' + credential.user.uid + '/data'), {});
+        alert("Account created successfully.");
+      } catch (error) {
+        console.error(error);
+        const messages = {
+          'auth/email-already-in-use': 'An account already exists with this email. Click Open Tracker.',
+          'auth/invalid-email': 'Please enter a valid email address.',
+          'auth/weak-password': 'Password must be at least 6 characters.'
+        };
+        alert(messages[error.code] || error.message);
       }
-
-      await set(userRef, { password: pass, data: {} });
-      currentUser = name;
-      store = {};
-      openDashboard();
     };
 
     window.handleResetPassword = async function(e) {
       e.preventDefault();
-      const name = document.getElementById('resetName').value.trim();
-      const newPass = document.getElementById('resetNewPassword').value.trim();
+      const email = document.getElementById('resetEmail').value.trim();
+      if (!email) return;
 
-      const userRef = ref(db, 'users/' + cleanKey(name));
-      const snapshot = await get(userRef);
-
-      if (!snapshot.exists()) { alert("Profile not found."); return; }
-
-      await set(ref(db, 'users/' + cleanKey(name) + '/password'), newPass);
-      alert("Password updated! Please login.");
-      showLogin();
+      try {
+        await sendPasswordResetEmail(auth, email);
+        alert("Password reset email sent. Check your inbox.");
+        showLogin();
+      } catch (error) {
+        console.error(error);
+        const messages = {
+          'auth/user-not-found': 'No account found with this email.',
+          'auth/invalid-email': 'Please enter a valid email address.'
+        };
+        alert(messages[error.code] || error.message);
+      }
     };
 
     function openDashboard() {
+      if (!currentUser) return;
       document.getElementById('loginSection').classList.add('hidden');
       document.getElementById('dashboardSection').classList.remove('hidden');
-      document.getElementById('mainHeaderTitle').innerText = `${currentUser} Savings Page`;
-      document.getElementById('userDisplayName').innerText = currentUser;
+      const displayName = getDisplayName(currentUser);
+      document.getElementById('mainHeaderTitle').innerText = `${displayName} Savings Page`;
+      document.getElementById('userDisplayName').innerText = displayName;
 
-      onValue(ref(db, 'users/' + cleanKey(currentUser) + '/data'), (snapshot) => {
+      onValue(userDataRef(), (snapshot) => {
         store = snapshot.val() || {};
         initApp();
+      }, (error) => {
+        console.error(error);
+        alert("Unable to read your savings data. Check Firebase Authentication and Database Rules.");
       });
     }
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (user) {
+        openDashboard();
+      } else {
+        document.getElementById('loginSection').classList.remove('hidden');
+        document.getElementById('dashboardSection').classList.add('hidden');
+      }
+    });
 
     function initApp() {
       ALL_MONTHS.forEach(m => {
@@ -501,7 +549,7 @@
 
       let csvRows = [];
       csvRows.push(['Pranava Savings Page - Monthly Report']);
-      csvRows.push(['User Profile', `"${currentUser}"`]);
+      csvRows.push(['User Profile', `"${getDisplayName(currentUser)}"`]);
       csvRows.push(['Month', `"${activeMonth}"`]);
       csvRows.push(['Monthly Budget', `₹${budget}`]);
       csvRows.push(['Total Spent', `₹${totalSpent}`]);
@@ -521,7 +569,7 @@
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
       const safeFileName = activeMonth.toLowerCase().replace(/[^a-z0-9]/g, "_");
-      link.setAttribute("download", `pranava_savings_${currentUser}_${safeFileName}.csv`);
+      link.setAttribute("download", `pranava_savings_${cleanKey(getDisplayName(currentUser))}_${safeFileName}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -539,7 +587,7 @@
 
     window.showResetPassword = () => { document.getElementById('loginForm').classList.add('hidden'); document.getElementById('resetForm').classList.remove('hidden'); };
     window.showLogin = () => { document.getElementById('resetForm').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); };
-    window.logout = () => location.reload();
+    window.logout = async () => { try { await signOut(auth); } catch (error) { console.error(error); } };
   </script>
 </body>
 </html>
